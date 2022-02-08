@@ -285,6 +285,11 @@ module.exports = function update(options, optionalLogger) {
 		packageArchive = zipFile;
 		return lambdaCode(s3, packageArchive, options['use-s3-bucket'], options['s3-sse'], options['s3-key']);
 	})
+	.then(result => {
+		logger.logStage('waiting for lambda resource allocation');
+		return waitUntilNotPending(lambda, lambdaConfig.name, awsDelay, awsRetries)
+		.then(() => result);
+	})
 	.then(functionCode => {
 		logger.logStage('updating Lambda');
 		s3Key = functionCode.S3Key;
