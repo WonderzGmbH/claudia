@@ -1,4 +1,6 @@
 module.exports = function expectedArchiveName(packageConfig, extension) {
 	'use strict';
-	return packageConfig.name.replace(/^@/, '').replace(/\//, '-') + '-' + packageConfig.version + (extension || '.tgz');
+	const name = packageConfig.name.replace(/^@/, '').replace(/\//, '-') + '-' + packageConfig.version + (extension || '.tgz');
+	console.log('expectedArchiveName()', name);
+	return name;
 };
