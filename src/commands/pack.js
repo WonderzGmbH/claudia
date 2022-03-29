@@ -8,6 +8,7 @@ const path = require('path'),
 	expectedArchiveName = require('../util/expected-archive-name'),
 	os = require('os'),
 	NullLogger = require('../util/null-logger');
+
 module.exports = function pack(options, optionalLogger) {
 	'use strict';
 	let workingDir, outputFileName = options.output && path.resolve(options.output);
@@ -29,6 +30,7 @@ module.exports = function pack(options, optionalLogger) {
 			fsUtil.rmDir(workingDir);
 			return result;
 		};
+		
 	if (validationError()) {
 		return Promise.reject(validationError());
 	}

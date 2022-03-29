@@ -1,11 +1,11 @@
 const readjson = require('../util/readjson'),
-	runNpm = require('../util/run-npm'),
 	fsUtil = require('../util/fs-util'),
 	extractTar = require('../util/extract-tar'),
 	fsPromise = require('../util/fs-promise'),
 	path = require('path'),
 	NullLogger = require('../util/null-logger'),
 	packProjectToTar = require('../util/pack-project-to-tar');
+const runYarn = require('../util/run-yarn');
 
 /*
  * Creates a directory with a NPM project and all production dependencies localised,
@@ -66,14 +66,14 @@ module.exports = function collectFiles(sourcePath, workingDir, options, optional
 			return packProjectToTar(projectDir, workingDir, npmOptions, logger)
 			.then(archive => extractTar(archive, path.dirname(archive)))
 			.then(archiveDir => path.join(archiveDir, 'package'))
-			.then(dir => copyIfExists(dir, projectDir, ['.npmrc', 'package-lock.json']));
+			.then(dir => copyIfExists(dir, projectDir, ['.npmrc', 'yarn.lock']));
 		},
 		installDependencies = function (targetDir) {
 			if (useLocalDependencies) {
 				fsUtil.copy(path.join(sourcePath, 'node_modules'), targetDir);
 				return Promise.resolve(targetDir);
 			} else {
-				return runNpm(targetDir, ['install',  '-q', '--no-audit', '--production'].concat(npmOptions), logger, runQuietly);
+				return runYarn(targetDir, ['install', '--frozen-lockfile', '--production'].concat(npmOptions), logger, runQuietly);
 			}
 		},
 		isRelativeDependency = function (dependency) {
@@ -135,7 +135,7 @@ module.exports = function collectFiles(sourcePath, workingDir, options, optional
 					}
 					return Promise.all(['dependencies', 'optionalDependencies'].map(t => remapDependencyType(packageConfig[t], referenceDir)))
 					.then(() => fsPromise.writeFileAsync(confPath, JSON.stringify(packageConfig, null, 2), 'utf8'))
-					.then(() => fsUtil.silentRemove(path.join(targetDir, 'package-lock.json')));
+					.then(() => fsUtil.silentRemove(path.join(targetDir, 'yarn.lock')));
 				}
 			})
 			.then(() => targetDir);
