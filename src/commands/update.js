@@ -4,6 +4,7 @@ const zipdir = require('../tasks/zipdir'),
 	os = require('os'),
 	path = require('path'),
 	cleanUpPackage = require('../tasks/clean-up-package'),
+	runPostCollectScript = require('../tasks/run-post-collect-script'),
 	aws = require('aws-sdk'),
 	allowApiInvocation = require('../tasks/allow-api-invocation'),
 	lambdaCode = require('../tasks/lambda-code'),
@@ -251,6 +252,9 @@ module.exports = function update(options, optionalLogger) {
 	.then(dir => workingDir = dir)
 	.then(() => collectFiles(options.source, workingDir, options, logger))
 	.then(dir => {
+		return runPostCollectScript(dir, options, logger);
+	})
+	.then(dir => {
 		logger.logStage('validating package');
 		return validatePackage(dir, functionConfig.Handler, apiConfig && apiConfig.module);
 	})
@@ -402,6 +406,14 @@ module.exports.doc = {
 			optional: true,
 			example: 'customNpmScript',
 			description: 'the name of a NPM script to execute custom processing after claudia finished packaging your files.\n' +
+				'Note that development dependencies are not available at this point, but you can use npm uninstall to remove utility tools as part of this step.',
+			since: '5.0.0'
+		},
+		{
+			argument: 'post-collect-script',
+			optional: true,
+			example: 'customNpmScript',
+			description: 'the name of a NPM script to execute custom processing after claudia finished collecting your files.\n' +
 				'Note that development dependencies are not available at this point, but you can use npm uninstall to remove utility tools as part of this step.',
 			since: '5.0.0'
 		},
