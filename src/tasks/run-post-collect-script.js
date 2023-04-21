@@ -5,7 +5,7 @@ module.exports = function runPostCollectScript(packageDir, options, logger) {
 		runPostCollectScript = function () {
 			const script = options['post-collect-script'];
 			if (script) {
-				return runNpm(packageDir, ['run', script].concat(npmOptions).concat(['-d', packageDir, '-s', options.source]), logger, options && options.quiet);
+				return runNpm(packageDir, ['run', script].concat(npmOptions).concat(['--', '-d', packageDir, '-s', options.source]), logger, options && options.quiet);
 			}
 		};
 	return Promise.resolve()
