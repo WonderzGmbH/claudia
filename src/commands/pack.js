@@ -8,6 +8,7 @@ const path = require('path'),
 	expectedArchiveName = require('../util/expected-archive-name'),
 	os = require('os'),
 	NullLogger = require('../util/null-logger');
+
 module.exports = function pack(options, optionalLogger) {
 	'use strict';
 	let workingDir, outputFileName = options.output && path.resolve(options.output);
@@ -29,15 +30,20 @@ module.exports = function pack(options, optionalLogger) {
 			fsUtil.rmDir(workingDir);
 			return result;
 		};
+
 	if (validationError()) {
 		return Promise.reject(validationError());
 	}
 	return fsPromise.mkdtempAsync(os.tmpdir() + path.sep)
-	.then(dir => workingDir = dir)
-	.then(() => {
+	.then(dir => {
+		console.log('working dir', dir);	
+		workingDir = dir;
+	})
+	.then(async () => {
 		if (!outputFileName) {
-			return readjson(packageConfPath)
-				.then(packageConf => outputFileName = path.resolve(expectedArchiveName(packageConf, '.zip')));
+			const name = await readjson(packageConfPath).then(packageConf => outputFileName = path.resolve(expectedArchiveName(packageConf, '.zip')));
+			console.log('name', name);	
+			return name;
 		}
 	})
 	.then(() => {
@@ -45,10 +51,16 @@ module.exports = function pack(options, optionalLogger) {
 			throw `${outputFileName} already exists. Use --force to overwrite it.`;
 		}
 	})
-	.then(() => collectFiles(source, workingDir, options, logger))
-	.then(dir => cleanUpPackage(dir, options, logger))
+	.then(() => {
+		console.log('collectFiles step ======================================================');
+		return collectFiles(source, workingDir, options, logger);
+	})
 	.then(dir => {
-		logger.logStage('zipping package');
+		console.log('cleanUpPackage step ======================================================', dir);	
+		return cleanUpPackage(dir, options, logger);
+	})
+	.then(dir => {
+		console.log('zipping package ======================================================');
 		return zipdir(dir);
 	})
 	.then(zipFile => fsUtil.move(zipFile, outputFileName))

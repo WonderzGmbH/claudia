@@ -1,11 +1,12 @@
 const readjson = require('../util/readjson'),
-	runNpm = require('../util/run-npm'),
 	fsUtil = require('../util/fs-util'),
 	extractTar = require('../util/extract-tar'),
 	fsPromise = require('../util/fs-promise'),
 	path = require('path'),
 	NullLogger = require('../util/null-logger'),
 	packProjectToTar = require('../util/pack-project-to-tar');
+const runYarn = require('../util/run-yarn');
+const fs = require('fs').promises;
 
 /*
  * Creates a directory with a NPM project and all production dependencies localised,
@@ -57,6 +58,7 @@ module.exports = function collectFiles(sourcePath, workingDir, options, optional
 			fileNames.forEach(fileName => {
 				const filePath = path.join(referencedir, fileName);
 				if (fsUtil.fileExists(filePath)) {
+					console.log('copy', filePath, targetDir);
 					fsUtil.copy(filePath, targetDir);
 				}
 			});
@@ -66,14 +68,36 @@ module.exports = function collectFiles(sourcePath, workingDir, options, optional
 			return packProjectToTar(projectDir, workingDir, npmOptions, logger)
 			.then(archive => extractTar(archive, path.dirname(archive)))
 			.then(archiveDir => path.join(archiveDir, 'package'))
-			.then(dir => copyIfExists(dir, projectDir, ['.npmrc', 'package-lock.json']));
+			.then(async (dir) => {
+				console.log('copyIfExists step', {dir, projectDir});
+				await copyIfExists(dir, projectDir, ['.npmrc', 'yarn.lock']);
+				return dir;
+			})
+			.then(async (dir) => {
+				console.log('trying to switch link: to file: deps ...', dir);
+
+				// replace stuff in package.json ("link:)
+				const packageJsonPath = path.join(dir, 'package.json');
+				const data = await fs.readFile(packageJsonPath, 'utf8');
+				const result = data.replace(/"link:/g, '"file:');
+				await fs.writeFile(packageJsonPath, result,'utf8');
+				
+				// replace stuff in yarn.lock (@link:)
+				const yarnLockPath = path.join(dir, 'package.json');
+				const data2 = await fs.readFile(yarnLockPath, 'utf8');
+				const result2 = data2.replace(/@link:/g, '@file:');
+				await fs.writeFile(yarnLockPath, result2,'utf8');
+
+				return dir;
+			});
 		},
 		installDependencies = function (targetDir) {
+			console.log('installDependencies() ==========================');
 			if (useLocalDependencies) {
 				fsUtil.copy(path.join(sourcePath, 'node_modules'), targetDir);
 				return Promise.resolve(targetDir);
 			} else {
-				return runNpm(targetDir, ['install',  '-q', '--no-audit', '--production'].concat(npmOptions), logger, runQuietly);
+				return runYarn(targetDir, ['install', '--frozen-lockfile', '--production'].concat(npmOptions), logger, runQuietly).then(() => targetDir);
 			}
 		},
 		isRelativeDependency = function (dependency) {
@@ -135,17 +159,20 @@ module.exports = function collectFiles(sourcePath, workingDir, options, optional
 					}
 					return Promise.all(['dependencies', 'optionalDependencies'].map(t => remapDependencyType(packageConfig[t], referenceDir)))
 					.then(() => fsPromise.writeFileAsync(confPath, JSON.stringify(packageConfig, null, 2), 'utf8'))
-					.then(() => fsUtil.silentRemove(path.join(targetDir, 'package-lock.json')));
+					// .then(() => fsUtil.silentRemove(path.join(targetDir, 'yarn.lock')));
+					// .then(() => fsUtil.silentRemove(path.join(targetDir, 'yarn.lock')));
 				}
 			})
 			.then(() => targetDir);
 		},
 		validationError = checkPreconditions(sourcePath);
-	logger.logStage('packaging files');
+	
+	console.log('packaging files');
 	if (validationError) {
 		return Promise.reject(validationError);
 	}
 	return cleanCopyToDir(sourcePath)
 	.then(copyDir => rewireRelativeDependencies(copyDir, sourcePath))
-	.then(installDependencies);
+	.then(installDependencies)
+	// .then(() => targetDir);
 };

@@ -3,6 +3,7 @@ const fs = require('fs'),
 	tarStream = require('tar-fs');
 
 module.exports = function extractTar(archive, dir) {
+	console.log('extractTar()');
 	'use strict';
 	return new Promise((resolve, reject) => {
 		const extractStream = tarStream.extract(dir);
