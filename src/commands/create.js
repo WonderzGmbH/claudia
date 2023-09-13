@@ -414,9 +414,14 @@ module.exports = function create(options, optionalLogger) {
     .then(() => fsPromise.mkdtempAsync(os.tmpdir() + path.sep))
     .then((dir) => (workingDir = dir))
     .then(() => collectFiles(source, workingDir, options, logger))
-    .then((dir) => {
+    .then(async (dir) => {
       logger.logStage('validating package');
-      return validatePackage(dir, options.handler, handlerFileExtension, options['api-module']);
+      return await validatePackage(
+        dir,
+        options.handler,
+        handlerFileExtension,
+        options['api-module']
+      );
     })
     .then((dir) => {
       packageFileDir = dir;

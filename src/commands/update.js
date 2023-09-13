@@ -314,9 +314,9 @@ module.exports = function update(options, optionalLogger) {
     .then((dir) => {
       return runPostCollectScript(dir, options, logger);
     })
-    .then((dir) => {
+    .then(async (dir) => {
       logger.logStage('validating package');
-      return validatePackage(
+      return await validatePackage(
         dir,
         functionConfig.Handler,
         handlerFileExtension,

@@ -6,7 +6,7 @@ const CURRENT_API_VERSION = 4;
 
 //
 //
-module.exports = function validatePackage(
+module.exports = async function validatePackage(
   dir,
   functionHandler,
   hadlerFileExtension,
@@ -23,7 +23,12 @@ module.exports = function validatePackage(
     handlerMethod = 'proxyRouter';
   }
   try {
-    apiModule = require(path.join(dir, `${apiModulePath}.${hadlerFileExtension}`));
+    const handlerPath = path.join(dir, `${apiModulePath}.${hadlerFileExtension}`);
+    if (hadlerFileExtension === 'js') {
+      apiModule = require(handlerPath);
+    } else {
+      apiModule = await import(handlerPath);
+    }
   } catch (e) {
     console.error(e.stack || e);
     throw `cannot require ./${apiModulePath} after clean installation. Check your dependencies.`;
