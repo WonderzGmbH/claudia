@@ -1,6 +1,7 @@
 const path = require('path');
 const validAuthType = require('../util/valid-auth-type');
 const validCredentials = require('../util/valid-credentials');
+
 const CURRENT_API_VERSION = 4;
 
 //
