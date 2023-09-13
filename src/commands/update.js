@@ -344,7 +344,7 @@ module.exports = function update(options, optionalLogger) {
       return updateConfiguration(requiresHandlerUpdate && functionConfig.Handler);
     })
     .then(() => {
-      logger.logStage('waiting for lambda resource allocation');
+      console.log('waiting for lambda resource allocation 1');
       return waitUntilNotPending(lambda, lambdaConfig.name, awsDelay, awsRetries);
     })
     .then(() => {
@@ -356,11 +356,11 @@ module.exports = function update(options, optionalLogger) {
       );
     })
     .then(() => {
-      logger.logStage('waiting for lambda resource allocation');
+      console.log('waiting for lambda resource allocation 2');
       return waitUntilNotPending(lambda, lambdaConfig.name, awsDelay, awsRetries);
     })
     .then(() => {
-      logger.logStage('zipping package');
+      console.log('zipping package');
       return zipdir(packageDir);
     })
     .then((zipFile) => {
@@ -374,13 +374,13 @@ module.exports = function update(options, optionalLogger) {
       );
     })
     .then((result) => {
-      logger.logStage('waiting for lambda resource allocation');
+      console.log('waiting for lambda resource allocation 3');
       return waitUntilNotPending(lambda, lambdaConfig.name, awsDelay, awsRetries).then(
         () => result
       );
     })
     .then((functionCode) => {
-      logger.logStage('updating Lambda');
+      console.log('updating Lambda');
       s3Key = functionCode.S3Key;
       functionCode.FunctionName = lambdaConfig.name;
       functionCode.Publish = true;
@@ -390,7 +390,7 @@ module.exports = function update(options, optionalLogger) {
       return lambda.updateFunctionCode(functionCode).promise();
     })
     .then((result) => {
-      logger.logStage('waiting for lambda resource allocation');
+      console.log('waiting for lambda resource allocation 4');
       return waitUntilNotPending(lambda, lambdaConfig.name, awsDelay, awsRetries).then(
         () => result
       );
