@@ -395,6 +395,19 @@ module.exports = function create(options, optionalLogger) {
         result.archive = packageArchive;
       }
       return result;
+    },
+    filterSecrets = function () {
+      if (updateResult?.Environment?.Variables != null) {
+        for (const key in updateResult.Environment.Variables) {
+          const oldValue = updateResult.Environment.Variables[key];
+          if (oldValue.length > 0 && oldValue.length <= 3) {
+            updateResult.Environment.Variables[key] = '***';
+          } else if (oldValue.length > 3) {
+            updateResult.Environment.Variables[key] = `${oldValue.substr(0, 3)}***`;
+          }
+        }
+      }
+      return updateResult;
     };
   if (validationError()) {
     return Promise.reject(validationError());
@@ -514,7 +527,8 @@ module.exports = function create(options, optionalLogger) {
     })
     .then(saveConfig)
     .then(formatResult)
-    .then(cleanup);
+    .then(cleanup)
+    .then(filterSecrets);
 };
 
 module.exports.doc = {

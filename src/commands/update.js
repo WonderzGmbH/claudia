@@ -205,6 +205,19 @@ module.exports = function update(options, optionalLogger) {
       }
       return updateResult;
     },
+    filterSecrets = function () {
+      if (updateResult?.Environment?.Variables != null) {
+        for (const key in updateResult.Environment.Variables) {
+          const oldValue = updateResult.Environment.Variables[key];
+          if (oldValue.length > 0 && oldValue.length <= 3) {
+            updateResult.Environment.Variables[key] = '***';
+          } else if (oldValue.length > 3) {
+            updateResult.Environment.Variables[key] = `${oldValue.substr(0, 3)}***`;
+          }
+        }
+      }
+      return updateResult;
+    },
     validateOptions = function () {
       if (!options.source) {
         options.source = process.cwd();
@@ -409,7 +422,8 @@ module.exports = function update(options, optionalLogger) {
       }
     })
     .then(updateWebApi)
-    .then(cleanup);
+    .then(cleanup)
+    .then(filterSecrets);
 };
 module.exports.doc = {
   description:
